@@ -49,7 +49,7 @@ exports.update = async (req, res) => {
     const updatedTask = new Task(title, description, dueDate, status);
     updatedTask.id = parseInt(id);
 
-    const index = Tasks.findIndex(t => t.id === parseInt(id));
+    const index = findIndex(tasks, id)
     if (index !== -1) {
         Tasks.splice(index, 1, updatedTask);
     }
@@ -61,16 +61,18 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
     const { id } = req.params;
 
-    task = await findTask(Tasks, id);
-    
-    if(!task){
-        return res.status(404).send(`Task ${id} not found`);
+    const index = findIndex(tasks, id)
+    if (index !== -1) {
+        Tasks.splice(index, 1);
     }
-
-    Tasks.splice(id - 1, 1);
+    else return res.status(404).send(`Task ${id} not found`);
 
     res.status(200).send();
 };
+
+function findIndex(tasks, id){
+    return tasks.findIndex(t => t.id === parseInt(id));
+}
 
 function findTask(tasks, id){
     return tasks.find(t => t.id === parseInt(id));
