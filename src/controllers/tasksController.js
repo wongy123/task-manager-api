@@ -18,7 +18,7 @@ exports.getAll = async (req, res) => {
 exports.get = async (req, res) => {
     const { id } = req.params;
 
-    task = await findTask(Tasks, id);
+    let task = await findTask(Tasks, id);
     
     if(!task){
         return res.status(404).send(`Task ${id} not found`);
@@ -29,7 +29,7 @@ exports.get = async (req, res) => {
 
 exports.create = async (req, res) => {
     const { title, description, dueDate, status } = req.body;
-    newTask = new Task(title, description, dueDate, status);
+    let newTask = new Task(title, description, dueDate, status);
 
     await Tasks.push(newTask);
 
@@ -40,7 +40,7 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const { title, description, dueDate, status } = req.body;
 
-    task = await findTask(Tasks, id);
+    let task = await findTask(Tasks, id);
     
     if(!task){
         return res.status(404).send(`Task ${id} not found`);
