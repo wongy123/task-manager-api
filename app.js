@@ -1,10 +1,19 @@
 const express = require("express");
+const mongoose = require("mongoose")
 const app = express();
 
 const indexRouter = require("./src/routes/index");
 
+const mongoDB = process.env.MONGODB_URI || "mongodb://localhost:27017/task-manager";
+
+main().catch((err) => console.log(err));
+
+async function main() {
+    await mongoose.connect(mongoDB);
+}
+
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", indexRouter);
 

@@ -1,79 +1,98 @@
-const Tasks = [];
+const Task = require("../models/task");
 
-class Task {
-    constructor(title, description, dueDate, status) {
-        this.id = Tasks.length ? Tasks[Tasks.length - 1].id + 1 : 1;
-        this.title = title;
-        this.description = description;
-        this.dueDate = dueDate;
-        this.status = status;
-    }
-}
+const { body, validationResult } = require("express-validator");
+const asyncHandler = require("express-async-handler");
 
-exports.getAll = async (req, res) => {
-    const allTasks = await Tasks;
+//Replaced with mongoose schema in ../models/task
+
+// class Task {
+//     constructor(title, description, dueDate, status) {
+//         this.id = Tasks.length ? Tasks[Tasks.length - 1].id + 1 : 1;
+//         this.title = title;
+//         this.description = description;
+//         this.dueDate = dueDate;
+//         this.status = status;
+//     }
+// }
+
+exports.getAll = asyncHandler(async (req, res, next) => {
+    const allTasks = await Task.find().sort({ dueDate: -1 });
     res.json(allTasks);
-};
+});
 
-exports.get = async (req, res) => {
+exports.get = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
 
-    let task = await findTask(Tasks, id);
-    
-    if(!task){
-        return res.status(404).send(`Task ${id} not found`);
+    const task = await Task.findById(id).exec();
+
+    if (!task) {
+        const err = new Error(`Task ${id} not found`);
+        err.status = 404;
+        return next(err);
     }
 
-    res.send(task);
-};
+    res.json(task);
+});
 
-exports.create = async (req, res) => {
-    const { title, description, dueDate, status } = req.body;
-    let newTask = new Task(title, description, dueDate, status);
+exports.create = [
+    body("title").trim().isLength({ min: 1 }).escape().withMessage("Title must be specified"),
+    body("description").trim().escape(),
+    body("dueDate").isISO8601().toDate(),
+    body("status").trim().isLength({ min: 1 }).escape().withMessage("Status must be specified"),
 
-    await Tasks.push(newTask);
+    asyncHandler(async (req, res, next) => {
+        const { title, description, dueDate, status } = req.body;
+        const newTask = new Task({ title: title, description: description, dueDate: dueDate, status: status });
 
-    res.send(newTask);
-};
+        await newTask.save();
+        res.status(201);
+        res.json(newTask);
+    }),
+];
 
-exports.update = async (req, res) => {
+exports.update = [
+    body("title").trim().isLength({ min: 1 }).escape().withMessage("Title must be specified"),
+    body("description").trim().escape(),
+    body("dueDate").isISO8601().toDate(),
+    body("status").trim().isLength({ min: 1 }).escape().withMessage("Status must be specified"),
+    asyncHandler(async (req, res, next) => {
+        const { id } = req.params;
+        const { title, description, dueDate, status } = req.body;
+
+        const taskExists = await Task.exists({ _id: id });
+
+        if (!taskExists) {
+            return res.status(404).json({ error: `Task ${id} not found` });
+        }
+
+        const task = await Task.findByIdAndUpdate(id, { title: title, description: description, dueDate: dueDate, status: status, _id: id });
+        // updatedTask.id = parseInt(id);
+        const newTask = await Task.findById(id);
+        res.status(200);
+        res.json(newTask);
+
+    }),
+];
+
+exports.delete = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
-    const { title, description, dueDate, status } = req.body;
 
-    let task = await findTask(Tasks, id);
-    
-    if(!task){
-        return res.status(404).send(`Task ${id} not found`);
+    const task = await Task.findById(id);
+    if (!task) {
+        return res.status(404).json({ error: `Task ${id} not found` });
     }
 
-    const updatedTask = new Task(title, description, dueDate, status);
-    updatedTask.id = parseInt(id);
-
-    const index = findIndex(tasks, id)
-    if (index !== -1) {
-        Tasks.splice(index, 1, updatedTask);
-    }
-
-    res.send(updatedTask);
-
-};
-
-exports.delete = async (req, res) => {
-    const { id } = req.params;
-
-    const index = findIndex(tasks, id)
-    if (index !== -1) {
-        Tasks.splice(index, 1);
-    }
-    else return res.status(404).send(`Task ${id} not found`);
+    await Task.findByIdAndDelete(id);
 
     res.status(200).send();
-};
+});
 
-function findIndex(tasks, id){
-    return tasks.findIndex(t => t.id === parseInt(id));
-}
 
-function findTask(tasks, id){
-    return tasks.find(t => t.id === parseInt(id));
-}
+//Replaced by Mongoose fuctions .findById()
+// function findIndex(tasks, id) {
+//     return tasks.findIndex(t => t.id === parseInt(id));
+// }
+
+// function findTask(tasks, id) {
+//     return tasks.find(t => t.id === parseInt(id));
+// }
