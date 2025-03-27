@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose")
 const app = express();
+const cors = require("cors");
 
 const indexRouter = require("./src/routes/index");
 
@@ -14,6 +15,7 @@ async function main() {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 app.use("/api", indexRouter);
 

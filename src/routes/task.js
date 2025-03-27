@@ -4,9 +4,10 @@ const router = express.Router();
 const controller = require("../controllers/taskController");
 const validateMongoId = require("../middleware/validateMongoId");
 const validateMediaType = require("../middleware/validateMediaType");
+const validatePaginateQueryParams = require("../middleware/validatePaginateQueryParams");
 
 router.route("/")
-    .get(controller.getAll)
+    .get(validatePaginateQueryParams, controller.getAll)
     .post(validateMediaType, controller.create)
 
 router.route("/:id")

@@ -1,7 +1,8 @@
 const Task = require("../models/task");
 
-const { body, validationResult } = require("express-validator");
+const { body, query, validationResult } = require("express-validator");
 const asyncHandler = require("express-async-handler");
+const { generatePaginationLinks } = require("../utils/generatePaginationLinks");
 
 //Replaced with mongoose schema in ../models/task
 
@@ -15,10 +16,37 @@ const asyncHandler = require("express-async-handler");
 //     }
 // }
 
-exports.getAll = asyncHandler(async (req, res, next) => {
-    const allTasks = await Task.find().sort({ dueDate: -1 });
-    res.json(allTasks);
-});
+exports.getAll =
+    [
+        query('title').optional().trim(),
+
+        asyncHandler(async (req, res, next) => {
+            // const allTasks = await Task.find().sort({ dueDate: -1 });
+            // res.json(allTasks);
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ errors: errors.array() });
+            } else {
+                const title = req.query.title || '';
+
+                const taskPage = await Task
+                    .find({ title: new RegExp(title, 'i') })
+                    .sort({ dueDate: 'asc' })
+                    .paginate({ ...req.paginate });
+
+                res
+                    .status(200)
+                    .links(generatePaginationLinks(
+                        req.originalUrl,
+                        req.paginate.page,
+                        taskPage.totalPages,
+                        req.paginate.limit
+                    ))
+                    .json(taskPage.docs);
+            }
+            next();
+        })
+    ];
 
 exports.get = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
